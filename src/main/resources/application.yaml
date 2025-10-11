@@ -1,0 +1,58 @@
+server:
+  port: 3000
+  servlet:
+    context-path: /api/v1
+
+app:
+  base-url: http://localhost:8080
+  verify-email-url: http://localhost:8080/api/auth/verify-email
+
+spring:
+  application:
+    name: restapi
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format-sql: true
+  
+  main:
+    banner-mode: off
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SUPPORT_EMAIL}
+    password: ${APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  config:
+    import: optional:file:.env[.properties]
+
+logging:
+  level:
+    root: warn
+
+jwt:
+  access:
+    secret-key: ${JWT_ACCESS_TOKEN_SECRET}
+    expiration-time: ${JWT_ACCESS_TOKEN_EXPIRES}
+  refresh:
+    secret-key: ${JWT_REFRESH_TOKEN_SECRET}
+    expiration-time: ${JWT_REFRESH_TOKEN_EXPIRES}
+
+
+# dzrp onpk xegq annk
+# LibraryHT
+
