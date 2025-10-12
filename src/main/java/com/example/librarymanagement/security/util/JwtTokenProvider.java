@@ -1,19 +1,18 @@
 package com.example.librarymanagement.security.util;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Slf4j
 @Component
@@ -37,6 +36,8 @@ public class JwtTokenProvider {
     private JwtParser accessParser;
     private JwtParser refreshParser;
 
+    public enum TokenKind {ACCESS, REFRESH}
+
     @PostConstruct
     void init() {
         accessKey = Keys.hmacShaKeyFor(decodeKey(accessTokenSecret));
@@ -47,15 +48,14 @@ public class JwtTokenProvider {
     }
 
     private byte[] decodeKey(String raw) {
-        return Base64.getDecoder().decode(raw);
+        return Decoders.BASE64.decode(raw);
     }
 
-    public String generateAccessToken(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+    public String generateAccessToken(Integer userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
+                .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())
@@ -63,11 +63,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(Integer userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())
@@ -75,40 +75,28 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    private enum TokenKind {ACCESS, REFRESH}
-
-    // ------------ Helpers ------------
-    private Claims parseClaims(String token, TokenKind kind) {
-        JwtParser parser = (kind == TokenKind.ACCESS) ? accessParser : refreshParser;
-        return parser.parseClaimsJws(token).getBody();
+    private Claims extractAllClaims(String token, TokenKind kind) {
+        return (kind == TokenKind.ACCESS)
+                ? accessParser.parseClaimsJws(token).getBody()
+                : refreshParser.parseClaimsJws(token).getBody();
     }
 
-    // ------------ Extractors ------------
-    public String getEmailFromToken(String token) {
-        return parseClaims(token, TokenKind.ACCESS).getSubject();
+    public <T> T extractClaim(String token, TokenKind kind, Function<Claims, T> resolver) {
+        return resolver.apply(extractAllClaims(token, kind));
     }
 
-//    public String getSubjectFromRefreshToken(String token) {
-//        return parseClaims(token, TokenKind.REFRESH).getSubject();
-//    }
-
-    public String getJtiFromAccessToken(String token) {
-        return parseClaims(token, TokenKind.ACCESS).getId();
+    public String extractSubject(String token) {
+        return extractClaim(token, TokenKind.ACCESS, Claims::getSubject);
     }
 
-    public String getJtiFromRefreshToken(String token) {
-        return parseClaims(token, TokenKind.REFRESH).getId();
+    public Date extractExpiration(String token) {
+        return extractClaim(token, TokenKind.ACCESS, Claims::getExpiration);
     }
 
-    public Date getExpirationFromAccessToken(String token) {
-        return parseClaims(token, TokenKind.ACCESS).getExpiration();
+    public String extractJti(String token, TokenKind kind) {
+        return extractClaim(token, kind, Claims::getId);
     }
 
-    public Date getExpirationFromRefreshToken(String token) {
-        return parseClaims(token, TokenKind.REFRESH).getExpiration();
-    }
-
-    // ------------ Validate ------------
     public boolean validateAccessToken(String token) {
         return validate(token, TokenKind.ACCESS);
     }
@@ -119,34 +107,22 @@ public class JwtTokenProvider {
 
     private boolean validate(String token, TokenKind kind) {
         try {
-            parseClaims(token, kind);
+            extractAllClaims(token, kind);
             return true;
         } catch (SecurityException ex) {
-            log.warn("{} Invalid JWT signature: {}" + kind + ex.getMessage());
+            log.warn("{} Invalid JWT signature: {}", kind, ex.getMessage());
         } catch (MalformedJwtException ex) {
-            log.warn("{} Invalid JWT token: {}" + kind + ex.getMessage());
+            log.warn("{} Invalid JWT token: {}", kind, ex.getMessage());
         } catch (ExpiredJwtException ex) {
-            log.warn("{} Expired JWT token: {}" + kind + ex.getMessage());
+            log.warn("{} Expired JWT token: {}", kind, ex.getMessage());
         } catch (UnsupportedJwtException ex) {
-            log.warn("{} Unsupported JWT token: {}" + kind + ex.getMessage());
+            log.warn("{} Unsupported JWT token: {}", kind, ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            // JWT claims string is empty
+            log.warn("{} JWT claims string is empty: {}", kind, ex.getMessage());
         }
         return false;
     }
 }
-
-/*
-* java.lang.Exception
- └── io.jsonwebtoken.JwtException
-      ├── ExpiredJwtException           (token hết hạn)
-      ├── UnsupportedJwtException       (JWT không được hỗ trợ)
-      ├── MalformedJwtException         (JWT bị sai định dạng)
-      ├── SignatureException            (chữ ký sai hoặc bị sửa)
-      ├── PrematureJwtException         (token chưa đến thời điểm có hiệu lực)
-      ├── MissingClaimException         (thiếu claim bắt buộc)
-      ├── IncorrectClaimException       (claim sai giá trị)
-* */
 
 
 

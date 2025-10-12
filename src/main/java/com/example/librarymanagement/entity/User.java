@@ -2,8 +2,13 @@ package com.example.librarymanagement.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -12,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -58,6 +63,25 @@ public class User {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    /*
+    * | Thành phần                               | Giải thích                                        |
+      | ---------------------------------------- | ------------------------------------------------- |
+      | `GrantedAuthority`                       | Interface mô tả 1 quyền                           |
+      | `SimpleGrantedAuthority`                 | Implement mặc định của quyền                      |
+      | `List.of(...)`                           | Tạo danh sách quyền                               |
+      | `role.getName()`                         | Lấy tên quyền (VD: `"ROLE_USER"`)                 |
+      | Trả về list này trong `getAuthorities()` | Spring Security dùng để xác định user có quyền gì |
+    * */
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
     }
 
     public enum UserStatus {

@@ -4,8 +4,8 @@ server:
     context-path: /api/v1
 
 app:
-  base-url: http://localhost:8080
-  verify-email-url: http://localhost:8080/api/auth/verify-email
+  base-url: http://localhost:3000
+  verify-email-url: http://localhost:3000/api/auth/verify-email
 
 spring:
   application:
@@ -17,8 +17,6 @@ spring:
     password: ${DATABASE_PASSWORD}
 
   jpa:
-    hibernate:
-      ddl-auto: create-drop
     properties:
       hibernate:
         format-sql: true
@@ -43,6 +41,13 @@ spring:
 logging:
   level:
     root: warn
+    com:
+      example:
+        librarymanagement:
+          logger: INFO
+
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
 
 jwt:
   access:
