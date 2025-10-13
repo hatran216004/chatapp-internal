@@ -14,10 +14,11 @@ import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
 import com.example.librarymanagement.security.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +28,15 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final EmailTokenService emailTokenService;
+    private final PasswordEncoder passwordEncoder;
     private final VerificationTokenRepository verificationTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
-//    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public void signup(SignupRequest req) {
@@ -84,13 +85,20 @@ public class AuthService {
             throw new UnauthorizedException("Account is locked");
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
-        );
+        /* UsernamePasswordAuthenticationToken(phiếu yêu cầu xác thực” có email + password) = {
+            Principal: minhhatran153@gmail.com,
+            Credentials: Password,
+            Authenticated: false,
+            Details: null,
+            Granted Authorities: []
+            }
+         */
+        Authentication authenticationToken = new UsernamePasswordAuthenticationToken(
+                req.getEmail(),
+                req.getPassword());
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
         return JwtResponse.builder()

@@ -1,7 +1,9 @@
 package com.example.librarymanagement.security.config;
 
+import com.example.librarymanagement.exception.AccessDeniedHandler;
+import com.example.librarymanagement.exception.AuthEntryPointJwt;
 import com.example.librarymanagement.security.filter.JwtAuthenticationFilter;
-import com.example.librarymanagement.service.CustomUserDetailsService;
+import com.example.librarymanagement.security.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,8 +27,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final CustomUserDetailsService customUserDetailsService;
+    private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AuthEntryPointJwt authEntryPointJwt;
+    private final AccessDeniedHandler accessDeniedHandler;
 
     private static final String[] WHITE_LIST_URL = {"/auth/**"};
 
@@ -35,43 +40,51 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Tiến hành xác thực. Nó chỉ biết gọi các AuthenticationProvider để kiểm tra thông tin.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // Một “máy kiểm tra” cụ thể (ví dụ: DaoAuthenticationProvider) biết cách xác thực username/password.
+    // Check password
     @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
-                                                         PasswordEncoder passwordEncoder) {
-        // DaoAuthenticationProvider: xác thực username/password
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+    public AuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService,
+                                                            PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return customUserDetailsService;
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(org.springframework.security.config.annotation.web.builders.HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
         http
                 .cors(cors -> {
-                }) // nếu có cấu hình CORS riêng thì thêm CorsConfigurationSource bean
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider(userDetailsService(), passwordEncoder()))
-                .authorizeHttpRequests(auth -> auth
+                })
+                .csrf(AbstractHttpConfigurer::disable) // Tắt CSRF vì app dùng JWT
+                .sessionManagement(sm
+                        -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng session
+                // Gắn handler cho lỗi 401/403
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authEntryPointJwt)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
+                .authenticationProvider(daoAuthenticationProvider(userDetailsService, passwordEncoder()))
+                // Quy định endpoint nào cần login
+                .authorizeHttpRequests(auth
+                        -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                /*
+                    Thêm filter kiểm tra JWT và đặt trước UsernamePasswordAuthenticationFilter
+                    * UsernamePasswordAuthenticationFilter là filter mặc định của Spring để xử lý form login (email + password).
+                    Bạn dùng JWT → không qua form login, nên phải xác thực JWT sớm hơn.
+                    Nếu JWT hợp lệ → set Authentication vào SecurityContextHolder
+                    (để các filter sau — kể cả Authorization — nhận diện được user)
+                */
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
+        return http.build(); // Build ra chuỗi filter hoàn chỉnh
     }
 }

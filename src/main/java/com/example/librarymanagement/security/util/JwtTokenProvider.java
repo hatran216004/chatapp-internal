@@ -1,12 +1,16 @@
 package com.example.librarymanagement.security.util;
 
+import com.example.librarymanagement.security.service.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -36,6 +40,8 @@ public class JwtTokenProvider {
     private JwtParser accessParser;
     private JwtParser refreshParser;
 
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
+
     public enum TokenKind {ACCESS, REFRESH}
 
     @PostConstruct
@@ -51,11 +57,13 @@ public class JwtTokenProvider {
         return Decoders.BASE64.decode(raw);
     }
 
-    public String generateAccessToken(Integer userId) {
+    public String generateAccessToken(Authentication authentication) {
+        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(userId.toString())
+                .setSubject(userPrincipal.getId().toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())
@@ -109,20 +117,15 @@ public class JwtTokenProvider {
         try {
             extractAllClaims(token, kind);
             return true;
-        } catch (SecurityException ex) {
-            log.warn("{} Invalid JWT signature: {}", kind, ex.getMessage());
-        } catch (MalformedJwtException ex) {
-            log.warn("{} Invalid JWT token: {}", kind, ex.getMessage());
-        } catch (ExpiredJwtException ex) {
-            log.warn("{} Expired JWT token: {}", kind, ex.getMessage());
-        } catch (UnsupportedJwtException ex) {
-            log.warn("{} Unsupported JWT token: {}", kind, ex.getMessage());
-        } catch (IllegalArgumentException ex) {
-            log.warn("{} JWT claims string is empty: {}", kind, ex.getMessage());
+        } catch (MalformedJwtException e) {
+            logger.error("Invalid JWT token: {}", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            logger.error("JWT token is expired: {}", e.getMessage());
         }
         return false;
     }
 }
+
 
 
 

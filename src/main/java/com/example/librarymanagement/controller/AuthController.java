@@ -30,38 +30,9 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", res));
     }
 
-//    @PostMapping("/refresh-token")
-//    public ResponseEntity<ApiResponse<JwtResponse>> refreshToken() {
-//        return
-//    }
-
     @GetMapping("/verify-email")
     public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok(ApiResponse.success("Email verified successfully. You can now login."));
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
