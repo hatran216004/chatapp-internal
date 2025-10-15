@@ -1,5 +1,6 @@
 package com.example.librarymanagement.service;
 
+import jakarta.mail.SendFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -17,7 +18,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    public void sendVerificationEmail(String toEmail, String token) {
+    public void sendVerificationEmail(String toEmail, String token) throws SendFailedException {
         String verificationLink = verifyEmailUrl + "?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();

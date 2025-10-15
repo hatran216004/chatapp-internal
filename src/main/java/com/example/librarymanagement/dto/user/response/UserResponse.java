@@ -3,7 +3,6 @@ package com.example.librarymanagement.dto.user.response;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,6 +22,6 @@ public class UserResponse {
     private String phone;
     private String address;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }

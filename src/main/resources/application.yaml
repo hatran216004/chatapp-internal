@@ -11,6 +11,9 @@ spring:
   application:
     name: restapi
 
+  jackson:
+    time-zone: UTC
+
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
@@ -20,6 +23,8 @@ spring:
     properties:
       hibernate:
         format-sql: true
+        jdbc:
+          time_zone: UTC
   
   main:
     banner-mode: off
@@ -40,6 +45,11 @@ spring:
 
 logging:
   level:
+    #    .org:
+    #      springframework:
+    #        security:
+    #          web:
+    #            FilterChainProxy: TRACE
     root: warn
     com:
       example:
@@ -57,7 +67,10 @@ jwt:
     secret-key: ${JWT_REFRESH_TOKEN_SECRET}
     expiration-time: ${JWT_REFRESH_TOKEN_EXPIRES}
 
-
+verify:
+  token:
+    mail: 86400000
+    reset-password: 86400000
 # dzrp onpk xegq annk
 # LibraryHT
 

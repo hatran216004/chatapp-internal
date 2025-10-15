@@ -6,13 +6,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-
 @Repository
 public interface JwtBlacklistRepository extends JpaRepository<JwtBlacklist, Integer> {
     Boolean existsByTokenJti(String tokenJti);
 
     @Modifying
     @Query("DELETE FROM JwtBlacklist j WHERE j.expiresAt < :now")
-    void deleteExpiredTokens(LocalDateTime now);
+    void deleteExpiredTokens(Long now);
 }

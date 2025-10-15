@@ -1,5 +1,6 @@
 package com.example.librarymanagement.security.filter;
 
+import com.example.librarymanagement.repository.JwtBlacklistRepository;
 import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.security.service.UserDetailsServiceImpl;
 import com.example.librarymanagement.security.util.JwtTokenProvider;
@@ -25,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserDetailsServiceImpl userDetailsServiceImpl;
     private final UserRepository userRepository;
+    private final JwtBlacklistRepository jwtBlacklistRepository;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest req,
@@ -33,10 +35,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt = getJwtFromRequest(req);
 
         if (StringUtils.hasText(jwt)
-                && SecurityContextHolder.getContext().getAuthentication() == null
                 && jwtTokenProvider.validateAccessToken(jwt)
+                && SecurityContextHolder.getContext().getAuthentication() == null
         ) {
-            Integer userId = Integer.parseInt(jwtTokenProvider.extractSubject(jwt));
+            String jti = jwtTokenProvider.extractJti(jwt, JwtTokenProvider.TokenKind.ACCESS);
+            // check blacklist token
+            if (jwtBlacklistRepository.existsByTokenJti(jti)) {
+                filterChain.doFilter(req, res);
+                return;
+            }
+
+            Integer userId = Integer.parseInt(jwtTokenProvider.extractSubject(jwt,
+                    JwtTokenProvider.TokenKind.ACCESS));
 
             UserDetails userDetails = userDetailsServiceImpl.loadUserById(userId);
             UsernamePasswordAuthenticationToken authentication =

@@ -3,8 +3,6 @@ package com.example.librarymanagement.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "verification_tokens")
 @NoArgsConstructor
@@ -33,19 +31,19 @@ public class VerificationToken {
     private String email;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Long createdAt;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Long expiresAt;
 
     @Column(name = "used")
     private Boolean used = false;
 
     @Column(name = "used_at")
-    private LocalDateTime usedAt;
+    private Long usedAt;
 
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+        return System.currentTimeMillis() > expiresAt;
     }
 
     public enum TokenPurpose {VERIFY_EMAIL, CHANGE_EMAIL, RESET_PASSWORD}

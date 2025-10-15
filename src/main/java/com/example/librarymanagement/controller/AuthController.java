@@ -1,10 +1,14 @@
 package com.example.librarymanagement.controller;
 
 import com.example.librarymanagement.dto.ApiResponse;
+import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
 import com.example.librarymanagement.dto.auth.request.LoginRequest;
+import com.example.librarymanagement.dto.auth.request.ResetPasswordRequest;
 import com.example.librarymanagement.dto.auth.request.SignupRequest;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,13 +25,43 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> signup(@Valid @RequestBody SignupRequest req) {
         authService.signup(req);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Registration successful. Please check your email to verify your account."));
+                .body(ApiResponse.success("Registration successfully. Please check your email to verify your account."));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<JwtResponse>> login(@RequestBody LoginRequest req) {
-        JwtResponse res = authService.login(req);
-        return ResponseEntity.ok(ApiResponse.success("Login successful", res));
+    public ResponseEntity<ApiResponse<JwtResponse>> login(@Valid @RequestBody LoginRequest req,
+                                                          HttpServletResponse res) {
+        JwtResponse data = authService.login(req, res);
+        return ResponseEntity.ok(ApiResponse.success("Login successfully.", data));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authHeader,
+                                                    HttpServletResponse res) {
+        String accessToken = authHeader.substring(7);
+        authService.logout(accessToken, res);
+        return ResponseEntity.ok(ApiResponse.success("Logout successfully."));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        String email = req.getEmail();
+        authService.forgotPassword(email);
+        return ResponseEntity.ok(ApiResponse.success("Please check your email to verify password reset token."));
+    }
+
+    @PutMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest req,
+                                                           @RequestParam String token) {
+        authService.resetPassword(token, req.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success("Reset password successfully."));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<JwtResponse>> refreshToken(HttpServletRequest req,
+                                                                 HttpServletResponse res) {
+        JwtResponse data = authService.refreshToken(req, res);
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully.", data));
     }
 
     @GetMapping("/verify-email")

@@ -71,11 +71,13 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(Integer userId) {
+    public String generateRefreshToken(Authentication authentication) {
+        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(userId.toString())
+                .setSubject(userPrincipal.getId().toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())
@@ -83,22 +85,27 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    private Claims extractAllClaims(String token, TokenKind kind) {
+    private Claims extractAllClaims(String token, TokenKind kind) throws JwtException {
         return (kind == TokenKind.ACCESS)
                 ? accessParser.parseClaimsJws(token).getBody()
                 : refreshParser.parseClaimsJws(token).getBody();
     }
 
     public <T> T extractClaim(String token, TokenKind kind, Function<Claims, T> resolver) {
-        return resolver.apply(extractAllClaims(token, kind));
+        Claims claims = extractAllClaims(token, kind);
+        return resolver.apply(claims);
     }
 
-    public String extractSubject(String token) {
-        return extractClaim(token, TokenKind.ACCESS, Claims::getSubject);
+    public String extractSubject(String token, TokenKind kind) {
+        return extractClaim(token, kind, Claims::getSubject);
     }
 
     public Date extractExpiration(String token) {
         return extractClaim(token, TokenKind.ACCESS, Claims::getExpiration);
+    }
+
+    public Date extractIssueAt(String token, TokenKind kind) {
+        return extractClaim(token, kind, Claims::getIssuedAt);
     }
 
     public String extractJti(String token, TokenKind kind) {
@@ -117,10 +124,24 @@ public class JwtTokenProvider {
         try {
             extractAllClaims(token, kind);
             return true;
-        } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            logger.error("JWT token is expired: {}", e.getMessage());
+        } catch (SecurityException ex) {
+            // Invalid JWT signature
+            logger.error("Invalid JWT signature: {}", ex.getMessage());
+        } catch (MalformedJwtException ex) {
+            // Invalid JWT token
+            logger.error("Invalid JWT token: {}", ex.getMessage());
+        } catch (ExpiredJwtException ex) {
+            // Expired JWT token
+            logger.error("Expired JWT token: {}", ex.getMessage());
+        } catch (UnsupportedJwtException ex) {
+            // Unsupported JWT token
+            logger.error("Unsupported JWT token: {}", ex.getMessage());
+        } catch (IllegalArgumentException ex) {
+            // JWT claims string is empty
+            logger.error("JWT claims string is empty: {}", ex.getMessage());
+        } catch (JwtException ex) {
+            // JWT claims string is empty
+            logger.error("JWT invalid: {}", ex.getMessage());
         }
         return false;
     }

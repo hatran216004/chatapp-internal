@@ -6,7 +6,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -41,10 +40,10 @@ public class User implements UserDetails {
     private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Long createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Long updatedAt;
 
     /* Trong UserProfile, cột user_id là foreign key trỏ về bảng users.id.
     Cột user_id nằm ở bảng user_profile (nên UserProfile là bên sở hữu mối quan hệ, gọi là owning side).
@@ -55,14 +54,14 @@ public class User implements UserDetails {
     // Chạy trước khi entity được lưu mới (insert).
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = System.currentTimeMillis();
+        updatedAt = System.currentTimeMillis();
     }
 
     // Chạy trước khi entity được cập nhật (update).
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = System.currentTimeMillis();
     }
 
     /*

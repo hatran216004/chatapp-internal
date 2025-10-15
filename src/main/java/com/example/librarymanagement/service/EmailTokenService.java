@@ -4,7 +4,9 @@ import com.example.librarymanagement.entity.User;
 import com.example.librarymanagement.entity.VerificationToken;
 import com.example.librarymanagement.exception.BadRequestException;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
+import com.example.librarymanagement.util.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +17,31 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EmailTokenService {
     private final VerificationTokenRepository verificationTokenRepository;
+    private final TokenHashUtil tokenHashUtil;
+
+    @Value("${verify.token.mail}")
+    private Long verifyTokenExpirationMs;
+
+    @Value("${verify.token.reset-password}")
+    private Long resetPasswordTokenExpirationMs;
 
     @Transactional
     public String createVerificationToken(User user, VerificationToken.TokenPurpose purpose) {
         String token = UUID.randomUUID().toString();
 
+        Long now = System.currentTimeMillis();
+        Long expiresAt = now + (purpose == VerificationToken.TokenPurpose.VERIFY_EMAIL
+                ? verifyTokenExpirationMs
+                : resetPasswordTokenExpirationMs);
+
         VerificationToken verificationToken = VerificationToken.builder()
                 .purpose(purpose)
-                .token(token)
+                .token(purpose == VerificationToken.TokenPurpose.VERIFY_EMAIL
+                        ? token
+                        : tokenHashUtil.hashToken(token))
                 .user(user)
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusHours(24))
+                .createdAt(now)
+                .expiresAt(expiresAt)
                 .used(false)
                 .build();
 
@@ -36,7 +52,10 @@ public class EmailTokenService {
 
     @Transactional(readOnly = true)
     public VerificationToken validateToken(String token, VerificationToken.TokenPurpose purpose) {
-        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+        String tokenString = purpose == VerificationToken.TokenPurpose.VERIFY_EMAIL
+                ? token
+                : tokenHashUtil.hashToken(token);
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(tokenString)
                 .orElseThrow(() -> new BadRequestException("Invalid verification token"));
 
         if (verificationToken.getPurpose() != purpose) {

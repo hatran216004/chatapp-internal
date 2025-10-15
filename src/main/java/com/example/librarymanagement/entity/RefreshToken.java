@@ -3,8 +3,6 @@ package com.example.librarymanagement.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "refresh_tokens")
 @Getter
@@ -26,10 +24,10 @@ public class RefreshToken {
     private String tokenHash;
 
     @Column(name = "issued_at", nullable = false)
-    private LocalDateTime issuedAt;
+    private Long issuedAt;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Long expiresAt;
 
     @Column(name = "revoked", nullable = false)
     private Boolean revoked = false;
@@ -38,6 +36,6 @@ public class RefreshToken {
     private String replacedBy;
 
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+        return System.currentTimeMillis() > expiresAt;
     }
 }

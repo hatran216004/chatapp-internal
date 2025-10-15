@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_profile")
@@ -35,10 +34,10 @@ public class UserProfile {
     private String address;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Long createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Long updatedAt;
 
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
@@ -46,13 +45,13 @@ public class UserProfile {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = System.currentTimeMillis();
+        updatedAt = System.currentTimeMillis();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = System.currentTimeMillis();
     }
 
     public enum Gender {MALE, FEMALE, OTHER}
