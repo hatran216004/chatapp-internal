@@ -26,7 +26,4 @@ public class SignupRequest {
             message = "Password must contain at least one digit, one lowercase, one uppercase, and one special character"
     )
     private String password;
-
-    @NotBlank(message = "Full name is required")
-    private String fullName;
 }

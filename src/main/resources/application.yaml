@@ -71,6 +71,7 @@ verify:
   token:
     mail: 86400000
     reset-password: 86400000
+    change-email: 86400000
 # dzrp onpk xegq annk
 # LibraryHT
 

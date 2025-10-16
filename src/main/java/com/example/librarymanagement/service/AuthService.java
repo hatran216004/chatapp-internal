@@ -60,13 +60,13 @@ public class AuthService {
                 .password(passwordEncoder.encode(req.getPassword()))
                 .role(userRole)
                 .isEmailVerified(false)
-                .status(User.UserStatus.ACTIVE).build();
+                .status(User.UserStatus.ACTIVE)
+                .build();
 
         user = userRepository.save(user);
 
         UserProfile profile = UserProfile.builder()
                 .user(user)
-                .fullName(req.getFullName())
                 .build();
 
         user.setUserProfile(profile);
@@ -80,9 +80,9 @@ public class AuthService {
         try {
             emailService.sendVerificationEmail(user.getEmail(), verifyToken);
         } catch (SendFailedException ex) {
-            VerificationToken token = verificationTokenRepository.findByToken(verifyToken)
-                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
-            verificationTokenRepository.delete(token);
+//            VerificationToken token = verificationTokenRepository.findByToken(verifyToken)
+//                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
+//            verificationTokenRepository.delete(token);
 
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -163,9 +163,9 @@ public class AuthService {
             emailService.sendVerificationEmail(user.getEmail(), passwordResetToken);
 
         } catch (SendFailedException ex) {
-            VerificationToken token = verificationTokenRepository.findByToken(passwordResetToken)
-                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
-            verificationTokenRepository.delete(token);
+//            VerificationToken token = verificationTokenRepository.findByToken(passwordResetToken)
+//                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
+//            verificationTokenRepository.delete(token);
 
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -175,6 +175,10 @@ public class AuthService {
     public void resetPassword(String token, String newPassword) {
         VerificationToken verificationToken = emailTokenService.validateToken(token,
                 VerificationToken.TokenPurpose.RESET_PASSWORD);
+
+        verificationToken.setUsed(true);
+        verificationToken.setUsedAt(System.currentTimeMillis());
+        verificationTokenRepository.save(verificationToken);
 
         User user = userRepository.findById(verificationToken.getUser().getId())
                 .orElseThrow(() -> new UnauthorizedException("User not found with reset password token"));

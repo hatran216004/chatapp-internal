@@ -28,7 +28,7 @@ public class VerificationToken {
     private String token;
 
     @Column(name = "new_email")
-    private String email;
+    private String newEmail;
 
     @Column(name = "created_at", nullable = false)
     private Long createdAt;

@@ -25,6 +25,9 @@ public class EmailTokenService {
     @Value("${verify.token.reset-password}")
     private Long resetPasswordTokenExpirationMs;
 
+    @Value("${verify.token.change-email}")
+    private Long changeEmailTokenExpirationMs;
+
     @Transactional
     public String createVerificationToken(User user, VerificationToken.TokenPurpose purpose) {
         String token = UUID.randomUUID().toString();
@@ -32,7 +35,9 @@ public class EmailTokenService {
         Long now = System.currentTimeMillis();
         Long expiresAt = now + (purpose == VerificationToken.TokenPurpose.VERIFY_EMAIL
                 ? verifyTokenExpirationMs
-                : resetPasswordTokenExpirationMs);
+                : purpose == VerificationToken.TokenPurpose.RESET_PASSWORD
+                ? resetPasswordTokenExpirationMs
+                : changeEmailTokenExpirationMs);
 
         VerificationToken verificationToken = VerificationToken.builder()
                 .purpose(purpose)
@@ -41,6 +46,28 @@ public class EmailTokenService {
                         : tokenHashUtil.hashToken(token))
                 .user(user)
                 .createdAt(now)
+                .expiresAt(expiresAt)
+                .used(false)
+                .build();
+
+        verificationTokenRepository.save(verificationToken);
+
+        return token;
+    }
+
+    @Transactional
+    public String createVerificationTokenChangeEmail(User user, String newEmail) {
+        String token = UUID.randomUUID().toString();
+
+        Long now = System.currentTimeMillis();
+        Long expiresAt = now + changeEmailTokenExpirationMs;
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .purpose(VerificationToken.TokenPurpose.CHANGE_EMAIL)
+                .token(tokenHashUtil.hashToken(token))
+                .user(user)
+                .createdAt(now)
+                .newEmail(newEmail)
                 .expiresAt(expiresAt)
                 .used(false)
                 .build();

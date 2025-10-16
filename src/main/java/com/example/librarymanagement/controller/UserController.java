@@ -1,18 +1,18 @@
 package com.example.librarymanagement.controller;
 
 import com.example.librarymanagement.dto.ApiResponse;
+import com.example.librarymanagement.dto.user.request.CreateUserRequest;
+import com.example.librarymanagement.dto.user.request.UpdateUserRequest;
 import com.example.librarymanagement.dto.user.response.UserResponse;
 import com.example.librarymanagement.dto.util.PageResponse;
 import com.example.librarymanagement.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/admin/users")
@@ -35,6 +35,30 @@ public class UserController {
         PageResponse<UserResponse> users = userService.getAllUsers(pageable);
 
         return ResponseEntity.ok(ApiResponse.success("successfully", users));
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Integer userId) {
+        UserResponse user = userService.getUserById(userId);
+        return ResponseEntity.ok(ApiResponse.success("successfully", user));
+    }
+
+    @PostMapping()
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody CreateUserRequest req) {
+        UserResponse user = userService.createUser(req);
+        return ResponseEntity.ok(ApiResponse.success("successfully", user));
+    }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Integer userId,
+                                                                @Valid @RequestBody UpdateUserRequest req) {
+        UserResponse userUpdated = userService.updateUserById(userId, req);
+        return ResponseEntity.ok(ApiResponse.success("User updated successfully", userUpdated));
+    }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String userId) {
+        return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
 }
 
