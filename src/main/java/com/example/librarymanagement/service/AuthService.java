@@ -1,5 +1,6 @@
 package com.example.librarymanagement.service;
 
+import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
 import com.example.librarymanagement.dto.auth.request.LoginRequest;
 import com.example.librarymanagement.dto.auth.request.ResendEmailSignupRequest;
 import com.example.librarymanagement.dto.auth.request.SignupRequest;
@@ -99,18 +100,51 @@ public class AuthService {
         if (user == null || user.getIsEmailVerified()) return;
 
         VerificationToken verificationToken = verificationTokenRepository
-                .findByUserIdAndPurposeAndUsedFalse(user.getId(), VerificationToken.TokenPurpose.VERIFY_EMAIL)
+                .findFirstByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(user.getId(),
+                        VerificationToken.TokenPurpose.VERIFY_EMAIL)
                 .orElse(null);
 
         String newVerificationToken;
         try {
-            if (verificationToken != null && verificationToken.isExpired()) {
+            if (verificationToken != null && !verificationToken.isExpired()) {
                 newVerificationToken = verificationToken.getToken();
             } else {
+                if (verificationToken != null) {
+                    verificationTokenRepository.delete(verificationToken);
+                }
                 newVerificationToken = emailTokenService.createVerificationToken(user,
                         VerificationToken.TokenPurpose.VERIFY_EMAIL);
             }
             emailService.sendVerificationEmail(email, newVerificationToken);
+        } catch (SendFailedException ex) {
+            throw new RuntimeException("There was an error sending the email. Try again later!");
+        }
+    }
+
+    @Transactional
+    public void resendEmailForgotPassword(ForgotPasswordRequest req) {
+        String email = req.getEmail();
+
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+
+        if (user == null) return;
+
+        VerificationToken forgotPasswordToken = verificationTokenRepository
+                .findFirstByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(user.getId(),
+                        VerificationToken.TokenPurpose.RESET_PASSWORD)
+                .orElse(null);
+
+        String newForgotPasswordToken;
+        try {
+            if (forgotPasswordToken != null) {
+                newForgotPasswordToken = emailTokenService.createVerificationToken(user,
+                        VerificationToken.TokenPurpose.RESET_PASSWORD);
+
+                emailService.sendVerificationEmail(email, newForgotPasswordToken);
+
+                verificationTokenRepository.delete(forgotPasswordToken);
+            }
         } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -183,7 +217,9 @@ public class AuthService {
     @Transactional
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("User not found"));
+                .orElse(null);
+
+        if (user == null) return;
 
         String passwordResetToken = emailTokenService.createVerificationToken(user,
                 VerificationToken.TokenPurpose.RESET_PASSWORD);
@@ -191,10 +227,6 @@ public class AuthService {
             emailService.sendVerificationEmail(user.getEmail(), passwordResetToken);
 
         } catch (SendFailedException ex) {
-//            VerificationToken token = verificationTokenRepository.findByToken(passwordResetToken)
-//                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
-//            verificationTokenRepository.delete(token);
-
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
     }
@@ -213,11 +245,6 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-    }
-
-    @Transactional
-    public void resendResetPasswordToken() {
-        //
     }
 
     @Transactional

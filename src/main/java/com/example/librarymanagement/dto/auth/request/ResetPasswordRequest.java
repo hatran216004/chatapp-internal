@@ -21,6 +21,6 @@ public class ResetPasswordRequest {
     )
     private String newPassword;
 
-    @NotBlank(message = "Please confirm your password")
-    private String passwordConfirm;
+//    @NotBlank(message = "Please confirm your password")
+//    private String passwordConfirm;
 }

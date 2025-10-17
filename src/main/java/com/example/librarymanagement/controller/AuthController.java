@@ -54,6 +54,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Please check your email to verify password reset token."));
     }
 
+    @PostMapping("/forgot-password/resend")
+    public ResponseEntity<ApiResponse<Void>> resendEmailForgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        authService.resendEmailForgotPassword(req);
+        return ResponseEntity.ok(ApiResponse.success("Please check your email to verify password reset token."));
+    }
+
     @PutMapping("/reset-password")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest req,
                                                            @RequestParam String token) {

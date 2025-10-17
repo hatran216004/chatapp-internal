@@ -11,8 +11,8 @@ import java.util.Optional;
 public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Integer> {
     Optional<VerificationToken> findByToken(String token);
 
-    Optional<VerificationToken> findByUserIdAndPurposeAndUsedFalse(Integer userId,
-                                                                   VerificationToken.TokenPurpose purose);
+    Optional<VerificationToken> findFirstByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(Integer userId,
+                                                                                            VerificationToken.TokenPurpose purose);
 
     /*Custom query trong repository dùng để xoá tất cả các token đã hết hạn trong bảng verification_token
     * Vì đây là câu lệnh thay đổi dữ liệu (DELETE),
