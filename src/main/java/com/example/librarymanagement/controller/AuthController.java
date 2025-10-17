@@ -1,10 +1,7 @@
 package com.example.librarymanagement.controller;
 
 import com.example.librarymanagement.dto.ApiResponse;
-import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
-import com.example.librarymanagement.dto.auth.request.LoginRequest;
-import com.example.librarymanagement.dto.auth.request.ResetPasswordRequest;
-import com.example.librarymanagement.dto.auth.request.SignupRequest;
+import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +23,13 @@ public class AuthController {
         authService.signup(req);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Registration successfully. Please check your email to verify your account."));
+    }
+
+    @PostMapping("/signup/resend")
+    public ResponseEntity<ApiResponse<Void>> resendSignupVerification(@Valid @RequestBody ResendEmailSignupRequest req) {
+        authService.resendEmailSignup(req);
+        return ResponseEntity.ok(ApiResponse
+                .success("If this email is registered, a confirmation link has been sent."));
     }
 
     @PostMapping("/login")

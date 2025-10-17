@@ -33,7 +33,7 @@ public class MaintenanceModeService {
     @Cacheable(value = "maintenanceMode", key = "'status'")
     public boolean isMaintenanceModeEnabled() {
         SystemConfig config = systemConfigRepository.findByConfigKey(MAINTENANCE_MODE_KEY)
-                .orElseGet(() -> null);
+                .orElse(null);
         if (config == null) {
             return false; // Mặc định OFF nếu chưa có config
         }
@@ -102,7 +102,7 @@ public class MaintenanceModeService {
         String configKey = req.getConfigKey();
 
         SystemConfig config = systemConfigRepository.findByConfigKey(configKey)
-                .orElseGet(() -> SystemConfig.builder()
+                .orElse(SystemConfig.builder()
                         .configKey(configKey)
                         .build());
 
@@ -141,7 +141,7 @@ public class MaintenanceModeService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         SystemConfig config = systemConfigRepository.findByConfigKey(MAINTENANCE_MODE_KEY)
-                .orElseGet(() -> SystemConfig.builder()
+                .orElse(SystemConfig.builder()
                         .configKey(MAINTENANCE_MODE_KEY)
                         .build());
 

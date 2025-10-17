@@ -20,7 +20,7 @@ public class EmailTokenService {
     private final TokenHashUtil tokenHashUtil;
 
     @Value("${verify.token.mail}")
-    private Long verifyTokenExpirationMs;
+    private Long verifySignupTokenExpirationMs;
 
     @Value("${verify.token.reset-password}")
     private Long resetPasswordTokenExpirationMs;
@@ -34,7 +34,7 @@ public class EmailTokenService {
 
         Long now = System.currentTimeMillis();
         Long expiresAt = now + (purpose == VerificationToken.TokenPurpose.VERIFY_EMAIL
-                ? verifyTokenExpirationMs
+                ? verifySignupTokenExpirationMs
                 : purpose == VerificationToken.TokenPurpose.RESET_PASSWORD
                 ? resetPasswordTokenExpirationMs
                 : changeEmailTokenExpirationMs);

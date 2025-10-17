@@ -1,6 +1,7 @@
 package com.example.librarymanagement.service;
 
 import com.example.librarymanagement.dto.auth.request.LoginRequest;
+import com.example.librarymanagement.dto.auth.request.ResendEmailSignupRequest;
 import com.example.librarymanagement.dto.auth.request.SignupRequest;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.entity.*;
@@ -84,6 +85,33 @@ public class AuthService {
 //                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
 //            verificationTokenRepository.delete(token);
 
+            throw new RuntimeException("There was an error sending the email. Try again later!");
+        }
+    }
+
+    @Transactional
+    public void resendEmailSignup(ResendEmailSignupRequest req) {
+        String email = req.getEmail();
+
+        User user = userRepository.findByEmail(email)
+                .orElse(null);
+
+        if (user == null || user.getIsEmailVerified()) return;
+
+        VerificationToken verificationToken = verificationTokenRepository
+                .findByUserIdAndPurposeAndUsedFalse(user.getId(), VerificationToken.TokenPurpose.VERIFY_EMAIL)
+                .orElse(null);
+
+        String newVerificationToken;
+        try {
+            if (verificationToken != null && verificationToken.isExpired()) {
+                newVerificationToken = verificationToken.getToken();
+            } else {
+                newVerificationToken = emailTokenService.createVerificationToken(user,
+                        VerificationToken.TokenPurpose.VERIFY_EMAIL);
+            }
+            emailService.sendVerificationEmail(email, newVerificationToken);
+        } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
     }
