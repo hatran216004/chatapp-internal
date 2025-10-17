@@ -16,14 +16,13 @@ import com.example.librarymanagement.repository.RoleRepository;
 import com.example.librarymanagement.repository.UserProfileRepository;
 import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
-import com.example.librarymanagement.security.service.UserDetailsImpl;
 import com.example.librarymanagement.util.TokenHashUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.SendFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -154,16 +153,16 @@ public class UserService {
     }
 
     @Transactional
-    public void requestEmailChange(EmailChangeRequest req) {
+    public void requestEmailChange(EmailChangeRequest req, Authentication authentication) {
         String newEmail = req.getEmail();
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder
-                .getContext().getAuthentication().getPrincipal();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("User not found with email: " + email));
 
-        User user = userRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new BadRequestException("User not found with ID: " + userDetails.getId()));
-
-        String changeEmailToken = emailTokenService.createVerificationTokenChangeEmail(user,
+        String changeEmailToken = emailTokenService.createVerificationToken(
+                user,
+                VerificationToken.TokenPurpose.CHANGE_EMAIL,
                 newEmail);
         try {
             emailService.sendVerificationEmail(newEmail, changeEmailToken);

@@ -56,7 +56,9 @@ public class EmailTokenService {
     }
 
     @Transactional
-    public String createVerificationTokenChangeEmail(User user, String newEmail) {
+    public String createVerificationToken(User user,
+                                          VerificationToken.TokenPurpose purpose,
+                                          String newEmail) {
         String token = UUID.randomUUID().toString();
 
         Long now = System.currentTimeMillis();

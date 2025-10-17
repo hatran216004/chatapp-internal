@@ -36,7 +36,9 @@ public class UserDetailsImpl implements UserDetails {
                 .id(user.getId())
                 .email(user.getEmail())
                 .password(user.getPassword())
+                .username(user.getEmail())
                 .authorities(authorities)
                 .build();
     }
 }
+// authentication.getName() = userDetails.getUsername()

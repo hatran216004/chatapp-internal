@@ -3,7 +3,6 @@ package com.example.librarymanagement.controller;
 import com.example.librarymanagement.dto.ApiResponse;
 import com.example.librarymanagement.dto.user.request.EmailChangeRequest;
 import com.example.librarymanagement.dto.user.response.UserResponse;
-import com.example.librarymanagement.security.service.UserDetailsImpl;
 import com.example.librarymanagement.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +18,15 @@ public class MeController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<UserResponse>> getMe(Authentication authentication) {
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        UserResponse user = userService.getUserByEmail(userDetails.getEmail());
+        String email = authentication.getName();
+        UserResponse user = userService.getUserByEmail(email);
         return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", user));
     }
 
     @PostMapping("/email-change")
-    public ResponseEntity<ApiResponse<Void>> requestEmailChange(@Valid @RequestBody EmailChangeRequest req) {
-        userService.requestEmailChange(req);
+    public ResponseEntity<ApiResponse<Void>> requestEmailChange(@Valid @RequestBody EmailChangeRequest req,
+                                                                Authentication authentication) {
+        userService.requestEmailChange(req, authentication);
         return ResponseEntity.ok(ApiResponse.success("Please check your email verification."));
     }
 

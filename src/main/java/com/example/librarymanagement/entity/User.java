@@ -51,14 +51,14 @@ public class User implements UserDetails {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserProfile userProfile;
 
-    // Chạy trước khi entity được lưu mới (insert).
+    // Chạy trước khi entity được lưu mới (insert)
     @PrePersist
     protected void onCreate() {
         createdAt = System.currentTimeMillis();
         updatedAt = System.currentTimeMillis();
     }
 
-    // Chạy trước khi entity được cập nhật (update).
+    // Chạy trước khi entity được cập nhật (update)
     @PreUpdate
     protected void onUpdate() {
         updatedAt = System.currentTimeMillis();

@@ -2,6 +2,7 @@ package com.example.librarymanagement.security.config;
 
 import com.example.librarymanagement.exception.AccessDeniedHandler;
 import com.example.librarymanagement.exception.AuthEntryPointJwt;
+import com.example.librarymanagement.filter.MaintenanceModeFilter;
 import com.example.librarymanagement.security.filter.JwtAuthenticationFilter;
 import com.example.librarymanagement.security.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final MaintenanceModeFilter maintenanceModeFilter;
     private final AuthEntryPointJwt authEntryPointJwt;
     private final AccessDeniedHandler accessDeniedHandler;
 
@@ -52,20 +54,21 @@ public class SecurityConfig {
                         -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng session
                 // Quy định endpoint nào cần login
                 .authorizeHttpRequests(auth
-                        -> auth
-                        .requestMatchers("/auth/logout").authenticated()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/**").authenticated()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        // bắt buộc mọi API khác(ngoài những cái được permitAll
-                        // hoặc hasRole) phải đăng nhập mới dùng được)
-                        .anyRequest().authenticated()
+                                -> auth
+                                .requestMatchers("/auth/logout").authenticated()
+                                .requestMatchers("/auth/**").permitAll()
+//                        .requestMatchers("/users/**").authenticated()
+                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                // bắt buộc mọi API khác(ngoài những cái được permitAll
+                                // hoặc hasRole) phải đăng nhập mới dùng được)
+                                .anyRequest().authenticated()
                 )// Gắn handler cho lỗi 401/403
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authEntryPointJwt)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(maintenanceModeFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build(); // Build ra chuỗi filter hoàn chỉnh
     }
