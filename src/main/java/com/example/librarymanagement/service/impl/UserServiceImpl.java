@@ -151,7 +151,9 @@ public class UserServiceImpl implements UserService {
         if (email.equalsIgnoreCase(user.getEmail())) {
             throw new BadRequestException("You cannot delete your own account.");
         }
-        userRepository.delete(user);
+        user.setDeletedAt(System.currentTimeMillis());
+
+        userRepository.save(user);
     }
 
     public UserResponse getUserByEmail(String email) {
@@ -246,6 +248,7 @@ public class UserServiceImpl implements UserService {
                 .roleName(user.getRole().getName())
                 .isEmailVerified(user.getIsEmailVerified())
                 .status(user.getStatus().name())
+                .deletedAt(user.getDeletedAt())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .fullName(fullname)

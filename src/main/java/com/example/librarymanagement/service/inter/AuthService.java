@@ -1,9 +1,6 @@
 package com.example.librarymanagement.service.inter;
 
-import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
-import com.example.librarymanagement.dto.auth.request.LoginRequest;
-import com.example.librarymanagement.dto.auth.request.ResendEmailSignupRequest;
-import com.example.librarymanagement.dto.auth.request.SignupRequest;
+import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +21,9 @@ public interface AuthService {
 
     public JwtResponse login(LoginRequest req, HttpServletResponse res);
 
-    public JwtResponse refreshToken(HttpServletRequest req, HttpServletResponse res);
+    public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest,
+                                    HttpServletRequest req,
+                                    HttpServletResponse res);
 
     public void verifyEmail(String token);
 

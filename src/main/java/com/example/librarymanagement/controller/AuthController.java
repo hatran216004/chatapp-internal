@@ -4,6 +4,7 @@ import com.example.librarymanagement.dto.ApiResponse;
 import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.service.inter.AuthService;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -69,9 +70,11 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<JwtResponse>> refreshToken(HttpServletRequest req,
-                                                                 HttpServletResponse res) {
-        JwtResponse data = authService.refreshToken(req, res);
+    public ResponseEntity<ApiResponse<JwtResponse>> refreshToken(
+            @Nullable @RequestBody RefreshTokenRequest refreshTokenRequest,
+            HttpServletRequest req,
+            HttpServletResponse res) {
+        JwtResponse data = authService.refreshToken(refreshTokenRequest, req, res);
         return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully.", data));
     }
 

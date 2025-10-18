@@ -15,6 +15,7 @@ public class UserResponse {
     private String roleName;
     private Boolean isEmailVerified;
     private String status;
+    private Long deletedAt;
 
     private String fullName;
     private LocalDate dob;

@@ -1,9 +1,6 @@
 package com.example.librarymanagement.service.impl;
 
-import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
-import com.example.librarymanagement.dto.auth.request.LoginRequest;
-import com.example.librarymanagement.dto.auth.request.ResendEmailSignupRequest;
-import com.example.librarymanagement.dto.auth.request.SignupRequest;
+import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.entity.*;
 import com.example.librarymanagement.exception.BadRequestException;
@@ -238,22 +235,36 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Transactional
-    public JwtResponse refreshToken(HttpServletRequest req, HttpServletResponse res) {
-        // 1. Lấy token từ cookie
-        String refreshTokenFromCookie = cookieUtil.getRefreshTokenFromCookie(req)
-                .orElseThrow(() -> new UnauthorizedException("Refresh token not found in cookie"));
+    public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest,
+                                    HttpServletRequest req,
+                                    HttpServletResponse res) {
+        // 1. Lấy token từ cookie / req body
+        String refreshTokenString = cookieUtil.getRefreshTokenFromCookie(req)
+                .orElseGet(() -> {
+                    if (refreshTokenRequest == null
+                            || refreshTokenRequest.getRefreshToken() == null
+                            || refreshTokenRequest.getRefreshToken().isBlank()
+                    ) {
+                        return null;
+                    }
+                    return refreshTokenRequest.getRefreshToken();
+                });
+
+        if (refreshTokenString == null) {
+            throw new UnauthorizedException("Refresh token not found in cookie/body");
+        }
 
         // 2. Validate token
-        if (!jwtTokenProvider.validateRefreshToken(refreshTokenFromCookie)) {
+        if (!jwtTokenProvider.validateRefreshToken(refreshTokenString)) {
             throw new UnauthorizedException("Invalid refresh token");
         }
 
         // 3.Hash token để tìm trong db
-        String oldRefreshTokenHash = tokenHashUtil.hashToken(refreshTokenFromCookie);
+        String oldRefreshTokenHash = tokenHashUtil.hashToken(refreshTokenString);
 
         // 4. Tìm token trong db
         RefreshToken oldRefreshToken = refreshTokenRepository.findByTokenHash(oldRefreshTokenHash)
-                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         // 5. Nếu token đã revoke -> Lỗi
         if (oldRefreshToken.getRevoked()) {
