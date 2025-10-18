@@ -58,7 +58,7 @@ public class SecurityConfig {
                                 .requestMatchers("/auth/logout").authenticated()
                                 .requestMatchers("/auth/**").permitAll()
 //                        .requestMatchers("/users/**").authenticated()
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                .requestMatchers("/admin/**").hasRole("SUPER_ADMIN")
                                 // bắt buộc mọi API khác(ngoài những cái được permitAll
                                 // hoặc hasRole) phải đăng nhập mới dùng được)
                                 .anyRequest().authenticated()

@@ -3,7 +3,7 @@ package com.example.librarymanagement.controller;
 import com.example.librarymanagement.dto.ApiResponse;
 import com.example.librarymanagement.dto.user.request.EmailChangeRequest;
 import com.example.librarymanagement.dto.user.response.UserResponse;
-import com.example.librarymanagement.service.UserService;
+import com.example.librarymanagement.service.inter.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +27,13 @@ public class MeController {
     public ResponseEntity<ApiResponse<Void>> requestEmailChange(@Valid @RequestBody EmailChangeRequest req,
                                                                 Authentication authentication) {
         userService.requestEmailChange(req, authentication);
+        return ResponseEntity.ok(ApiResponse.success("Please check your email verification."));
+    }
+
+    @PostMapping("/email-change/resend")
+    public ResponseEntity<ApiResponse<Void>> resendRequestEmailChange(@Valid @RequestBody EmailChangeRequest req,
+                                                                      Authentication authentication) {
+        userService.resendRequestEmailChange(req, authentication);
         return ResponseEntity.ok(ApiResponse.success("Please check your email verification."));
     }
 

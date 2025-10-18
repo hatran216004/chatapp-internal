@@ -1,4 +1,4 @@
-package com.example.librarymanagement.service;
+package com.example.librarymanagement.service.impl;
 
 import com.example.librarymanagement.dto.user.request.CreateUserRequest;
 import com.example.librarymanagement.dto.user.request.EmailChangeRequest;
@@ -16,6 +16,9 @@ import com.example.librarymanagement.repository.RoleRepository;
 import com.example.librarymanagement.repository.UserProfileRepository;
 import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
+import com.example.librarymanagement.service.inter.EmailService;
+import com.example.librarymanagement.service.inter.EmailTokenService;
+import com.example.librarymanagement.service.inter.UserService;
 import com.example.librarymanagement.util.TokenHashUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.SendFailedException;
@@ -31,7 +34,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -140,9 +143,14 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUserById(Integer userId) {
+    public void deleteUserById(Integer userId, Authentication authentication) {
+        String email = authentication.getName();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+
+        if (email.equalsIgnoreCase(user.getEmail())) {
+            throw new BadRequestException("You cannot delete your own account.");
+        }
         userRepository.delete(user);
     }
 
@@ -156,6 +164,10 @@ public class UserService {
     public void requestEmailChange(EmailChangeRequest req, Authentication authentication) {
         String newEmail = req.getEmail();
 
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new BadRequestException("Email already registered" + newEmail);
+        }
+
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException("User not found with email: " + email));
@@ -166,6 +178,35 @@ public class UserService {
                 newEmail);
         try {
             emailService.sendVerificationEmail(newEmail, changeEmailToken);
+        } catch (SendFailedException ex) {
+            throw new RuntimeException("There was an error sending the email. Try again later!");
+        }
+    }
+
+    @Transactional
+    public void resendRequestEmailChange(EmailChangeRequest req, Authentication authentication) {
+        String newEmail = req.getEmail();
+        String currentEmail = authentication.getName();
+
+        if (currentEmail.equalsIgnoreCase(newEmail)) {
+            throw new BadRequestException("New email cannot be the same as current email");
+        }
+
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new BadRequestException("Email already registered" + newEmail);
+        }
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new BadRequestException("User not found with email: " + currentEmail));
+
+        // Always delete old tokens and create new one
+        verificationTokenRepository.deleteByUserIdAndPurpose(user.getId(),
+                VerificationToken.TokenPurpose.CHANGE_EMAIL);
+
+        String newVerificationToken = emailTokenService.createVerificationToken(user,
+                VerificationToken.TokenPurpose.CHANGE_EMAIL,
+                newEmail);
+        try {
+            emailService.sendVerificationEmail(newEmail, newVerificationToken);
         } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -189,12 +230,14 @@ public class UserService {
         userRepository.save(user);
     }
 
-    private UserResponse mapToUserResponse(User user) {
+    public UserResponse mapToUserResponse(User user) {
         UserProfile userProfile = user.getUserProfile();
 
         String gender = userProfile.getGender() != null ? userProfile.getGender().name() : null;
+        String fullname = userProfile.getFullName() != null ? userProfile.getFullName() : null;
         String phone = userProfile.getPhone() != null ? userProfile.getPhone() : null;
         String address = userProfile.getAddress() != null ? userProfile.getAddress() : null;
+        String avatarUrl = userProfile.getAvatarUrl() != null ? userProfile.getAvatarUrl() : null;
         LocalDate dob = userProfile.getDob() != null ? userProfile.getDob() : null;
 
         return UserResponse.builder()
@@ -205,7 +248,8 @@ public class UserService {
                 .status(user.getStatus().name())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                .fullName(userProfile.getFullName())
+                .fullName(fullname)
+                .avatarUrl(avatarUrl)
                 .dob(dob)
                 .gender(gender)
                 .phone(phone)

@@ -1,4 +1,4 @@
-package com.example.librarymanagement.service;
+package com.example.librarymanagement.service.impl;
 
 import com.example.librarymanagement.dto.system.request.SystemConfigRequest;
 import com.example.librarymanagement.dto.system.response.SystemConfigResponse;
@@ -8,6 +8,7 @@ import com.example.librarymanagement.exception.BadRequestException;
 import com.example.librarymanagement.exception.ResourceNotFoundException;
 import com.example.librarymanagement.repository.SystemConfigRepository;
 import com.example.librarymanagement.repository.UserRepository;
+import com.example.librarymanagement.service.inter.MaintenanceModeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MaintenanceModeService {
+public class MaintenanceModeServiceImpl implements MaintenanceModeService {
     private final SystemConfigRepository systemConfigRepository;
     private final UserRepository userRepository;
 
@@ -133,9 +134,9 @@ public class MaintenanceModeService {
         log.info("CONFIG DELETED: {}", configKey);
     }
 
-    // ------------------------- private helper -------------------------
+    // ------------------------- helper -------------------------
     // Update maintenance mode
-    private SystemConfigResponse updateMaintenanceMode(String status, Authentication authentication) {
+    public SystemConfigResponse updateMaintenanceMode(String status, Authentication authentication) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException("User not found"));
@@ -155,7 +156,7 @@ public class MaintenanceModeService {
     }
 
     // Map entity to response DTO
-    private SystemConfigResponse mapToResponse(SystemConfig config) {
+    public SystemConfigResponse mapToResponse(SystemConfig config) {
         return SystemConfigResponse.builder()
                 .id(config.getId())
                 .configKey(config.getConfigKey())

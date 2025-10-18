@@ -1,4 +1,4 @@
-package com.example.librarymanagement.service;
+package com.example.librarymanagement.service.impl;
 
 import com.example.librarymanagement.dto.auth.request.ForgotPasswordRequest;
 import com.example.librarymanagement.dto.auth.request.LoginRequest;
@@ -11,6 +11,9 @@ import com.example.librarymanagement.exception.UnauthorizedException;
 import com.example.librarymanagement.repository.*;
 import com.example.librarymanagement.security.service.UserDetailsServiceImpl;
 import com.example.librarymanagement.security.util.JwtTokenProvider;
+import com.example.librarymanagement.service.inter.AuthService;
+import com.example.librarymanagement.service.inter.EmailService;
+import com.example.librarymanagement.service.inter.EmailTokenService;
 import com.example.librarymanagement.util.CookieUtil;
 import com.example.librarymanagement.util.TokenHashUtil;
 import jakarta.mail.SendFailedException;
@@ -30,8 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+public class AuthServiceImpl implements AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -82,10 +85,6 @@ public class AuthService {
         try {
             emailService.sendVerificationEmail(user.getEmail(), verifyToken);
         } catch (SendFailedException ex) {
-//            VerificationToken token = verificationTokenRepository.findByToken(verifyToken)
-//                    .orElseThrow(() -> new UnauthorizedException("Password reset token not found"));
-//            verificationTokenRepository.delete(token);
-
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
     }
@@ -95,26 +94,14 @@ public class AuthService {
         String email = req.getEmail();
 
         User user = userRepository.findByEmail(email)
-                .orElse(null);
+                .orElseThrow(() -> new BadRequestException("User not found"));
 
-        if (user == null || user.getIsEmailVerified()) return;
+        verificationTokenRepository.deleteByUserIdAndPurpose(user.getId(),
+                VerificationToken.TokenPurpose.VERIFY_EMAIL);
 
-        VerificationToken verificationToken = verificationTokenRepository
-                .findFirstByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(user.getId(),
-                        VerificationToken.TokenPurpose.VERIFY_EMAIL)
-                .orElse(null);
-
-        String newVerificationToken;
+        String newVerificationToken = emailTokenService.createVerificationToken(user,
+                VerificationToken.TokenPurpose.VERIFY_EMAIL);
         try {
-            if (verificationToken != null && !verificationToken.isExpired()) {
-                newVerificationToken = verificationToken.getToken();
-            } else {
-                if (verificationToken != null) {
-                    verificationTokenRepository.delete(verificationToken);
-                }
-                newVerificationToken = emailTokenService.createVerificationToken(user,
-                        VerificationToken.TokenPurpose.VERIFY_EMAIL);
-            }
             emailService.sendVerificationEmail(email, newVerificationToken);
         } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
@@ -126,25 +113,15 @@ public class AuthService {
         String email = req.getEmail();
 
         User user = userRepository.findByEmail(email)
-                .orElse(null);
+                .orElseThrow(() -> new BadRequestException("User not found"));
 
-        if (user == null) return;
+        verificationTokenRepository.deleteByUserIdAndPurpose(user.getId(),
+                VerificationToken.TokenPurpose.RESET_PASSWORD);
 
-        VerificationToken forgotPasswordToken = verificationTokenRepository
-                .findFirstByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(user.getId(),
-                        VerificationToken.TokenPurpose.RESET_PASSWORD)
-                .orElse(null);
-
-        String newForgotPasswordToken;
+        String newForgotPasswordToken = emailTokenService.createVerificationToken(user,
+                VerificationToken.TokenPurpose.RESET_PASSWORD);
         try {
-            if (forgotPasswordToken != null) {
-                newForgotPasswordToken = emailTokenService.createVerificationToken(user,
-                        VerificationToken.TokenPurpose.RESET_PASSWORD);
-
-                emailService.sendVerificationEmail(email, newForgotPasswordToken);
-
-                verificationTokenRepository.delete(forgotPasswordToken);
-            }
+            emailService.sendVerificationEmail(email, newForgotPasswordToken);
         } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -188,7 +165,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(String token, HttpServletResponse res) {
+    public void logout(String token, HttpServletRequest req, HttpServletResponse res) {
         String jti = jwtTokenProvider.extractJti(token, JwtTokenProvider.TokenKind.ACCESS);
         Integer userId = Integer.parseInt(jwtTokenProvider.extractSubject(token,
                 JwtTokenProvider.TokenKind.ACCESS));
@@ -209,8 +186,21 @@ public class AuthService {
 
         jwtBlacklistRepository.save(blacklist);
 
+        // Revoke refresh token
+        String refreshTokenFromCookie = cookieUtil.getRefreshTokenFromCookie(req)
+                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
+
+        String refreshTokenHash = tokenHashUtil.hashToken(refreshTokenFromCookie);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(refreshTokenHash)
+                .orElseThrow(() -> new UnauthorizedException("Refresh token not found"));
+
+        refreshToken.setRevoked(true);
+        refreshTokenRepository.save(refreshToken);
+
         // Xóa refresh token cookie
         cookieUtil.deleteRefreshTokenFromCookie(res);
+
         SecurityContextHolder.clearContext();
     }
 

@@ -3,7 +3,7 @@ package com.example.librarymanagement.controller;
 import com.example.librarymanagement.dto.ApiResponse;
 import com.example.librarymanagement.dto.system.request.SystemConfigRequest;
 import com.example.librarymanagement.dto.system.response.SystemConfigResponse;
-import com.example.librarymanagement.service.MaintenanceModeService;
+import com.example.librarymanagement.service.inter.MaintenanceModeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

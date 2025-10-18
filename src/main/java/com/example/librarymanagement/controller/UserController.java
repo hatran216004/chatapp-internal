@@ -5,13 +5,14 @@ import com.example.librarymanagement.dto.user.request.CreateUserRequest;
 import com.example.librarymanagement.dto.user.request.UpdateUserRequest;
 import com.example.librarymanagement.dto.user.response.UserResponse;
 import com.example.librarymanagement.dto.util.PageResponse;
-import com.example.librarymanagement.service.UserService;
+import com.example.librarymanagement.service.inter.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -57,7 +58,9 @@ public class UserController {
     }
 
     @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable String userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Integer userId,
+                                                        Authentication authentication) {
+        userService.deleteUserById(userId, authentication);
         return ResponseEntity.ok(ApiResponse.success("User deleted successfully"));
     }
 }

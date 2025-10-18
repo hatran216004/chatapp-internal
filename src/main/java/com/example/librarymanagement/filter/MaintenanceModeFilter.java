@@ -1,7 +1,7 @@
 package com.example.librarymanagement.filter;
 
 import com.example.librarymanagement.dto.ApiResponse;
-import com.example.librarymanagement.service.MaintenanceModeService;
+import com.example.librarymanagement.service.impl.MaintenanceModeServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class MaintenanceModeFilter extends OncePerRequestFilter {
-    private final MaintenanceModeService maintenanceModeService;
+    private final MaintenanceModeServiceImpl maintenanceModeService;
     private final ObjectMapper objectMapper;
 
     private static final List<String> ALLOWED_ENDPOINTS = List.of(

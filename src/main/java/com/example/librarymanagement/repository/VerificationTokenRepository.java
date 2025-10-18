@@ -4,8 +4,8 @@ import com.example.librarymanagement.entity.VerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Integer> {
@@ -21,5 +21,10 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
      mà là câu query thực hiện thao tác thay đổi dữ liệu (update / delete / insert).”*/
     @Modifying
     @Query("DELETE FROM VerificationToken v WHERE v.expiresAt < :now")
-    void deleteExpiredTokens(LocalDateTime now);
+    void deleteExpiredTokens(@Param("now") Long now);
+
+    @Modifying
+    @Query("DELETE FROM VerificationToken v WHERE v.user.id = :userId AND v.purpose = :purpose")
+    void deleteByUserIdAndPurpose(@Param("userId") Integer userId,
+                                  @Param("purpose") VerificationToken.TokenPurpose purpose);
 }

@@ -3,7 +3,7 @@ package com.example.librarymanagement.controller;
 import com.example.librarymanagement.dto.ApiResponse;
 import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
-import com.example.librarymanagement.service.AuthService;
+import com.example.librarymanagement.service.inter.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -41,9 +41,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authHeader,
+                                                    HttpServletRequest req,
                                                     HttpServletResponse res) {
         String accessToken = authHeader.substring(7);
-        authService.logout(accessToken, res);
+        authService.logout(accessToken, req, res);
         return ResponseEntity.ok(ApiResponse.success("Logout successfully."));
     }
 

@@ -30,6 +30,9 @@ public class UserProfile {
     @Column(name = "phone", length = 30)
     private String phone;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(name = "address")
     private String address;
 

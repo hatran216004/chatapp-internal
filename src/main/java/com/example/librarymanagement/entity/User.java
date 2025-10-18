@@ -39,6 +39,9 @@ public class User implements UserDetails {
     @Column(name = "status", nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "deleted_at")
+    private Long deletedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Long createdAt;
 

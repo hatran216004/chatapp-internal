@@ -1,5 +1,6 @@
-package com.example.librarymanagement.service;
+package com.example.librarymanagement.service.impl;
 
+import com.example.librarymanagement.service.inter.EmailService;
 import jakarta.mail.SendFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class EmailService {
+public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
 
     @Value("${app.verify-email-url}")

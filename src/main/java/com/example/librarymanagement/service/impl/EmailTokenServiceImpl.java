@@ -1,21 +1,21 @@
-package com.example.librarymanagement.service;
+package com.example.librarymanagement.service.impl;
 
 import com.example.librarymanagement.entity.User;
 import com.example.librarymanagement.entity.VerificationToken;
 import com.example.librarymanagement.exception.BadRequestException;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
+import com.example.librarymanagement.service.inter.EmailTokenService;
 import com.example.librarymanagement.util.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class EmailTokenService {
+public class EmailTokenServiceImpl implements EmailTokenService {
     private final VerificationTokenRepository verificationTokenRepository;
     private final TokenHashUtil tokenHashUtil;
 
@@ -104,7 +104,7 @@ public class EmailTokenService {
 
     @Transactional
     public void cleanupExpiredTokens() {
-        verificationTokenRepository.deleteExpiredTokens(LocalDateTime.now());
+        verificationTokenRepository.deleteExpiredTokens(System.currentTimeMillis());
     }
 }
 
