@@ -33,6 +33,7 @@ public class CreateUserRequest {
     private User.UserStatus status;
 
     private String fullName;
+    private String bio;
 
     @Past(message = "Date of birth must be in the past")
     private LocalDate dob;

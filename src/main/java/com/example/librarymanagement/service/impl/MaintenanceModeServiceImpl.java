@@ -156,7 +156,7 @@ public class MaintenanceModeServiceImpl implements MaintenanceModeService {
     }
 
     // Map entity to response DTO
-    public SystemConfigResponse mapToResponse(SystemConfig config) {
+    private SystemConfigResponse mapToResponse(SystemConfig config) {
         return SystemConfigResponse.builder()
                 .id(config.getId())
                 .configKey(config.getConfigKey())

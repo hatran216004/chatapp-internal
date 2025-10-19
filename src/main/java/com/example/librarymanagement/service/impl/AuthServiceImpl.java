@@ -1,5 +1,6 @@
 package com.example.librarymanagement.service.impl;
 
+import com.example.librarymanagement.config.AwsBuckets;
 import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
 import com.example.librarymanagement.entity.*;
@@ -45,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final CookieUtil cookieUtil;
     private final TokenHashUtil tokenHashUtil;
+    private final AwsBuckets awsBuckets;
 
     @Transactional
     public void signup(SignupRequest req) {
@@ -67,8 +69,10 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user);
 
+        String avatarS3Key = awsBuckets.getUserImagePath("default-user.jpeg");
         UserProfile profile = UserProfile.builder()
                 .user(user)
+                .avatarS3Key(avatarS3Key)
                 .build();
 
         user.setUserProfile(profile);
@@ -212,7 +216,6 @@ public class AuthServiceImpl implements AuthService {
                 VerificationToken.TokenPurpose.RESET_PASSWORD);
         try {
             emailService.sendVerificationEmail(user.getEmail(), passwordResetToken);
-
         } catch (SendFailedException ex) {
             throw new RuntimeException("There was an error sending the email. Try again later!");
         }
@@ -329,7 +332,7 @@ public class AuthServiceImpl implements AuthService {
         verificationTokenRepository.save(verificationToken);
     }
 
-    public void saveRefreshToken(User user, String refreshToken) {
+    private void saveRefreshToken(User user, String refreshToken) {
         Long refreshTTL = jwtTokenProvider.getRefreshTokenExpirationMs();
         Long refreshIssueAt = jwtTokenProvider.extractIssueAt(refreshToken,
                 JwtTokenProvider.TokenKind.REFRESH).getTime();

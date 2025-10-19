@@ -5,7 +5,6 @@ import com.example.librarymanagement.dto.user.request.EmailChangeRequest;
 import com.example.librarymanagement.dto.user.request.UpdateUserRequest;
 import com.example.librarymanagement.dto.user.response.UserResponse;
 import com.example.librarymanagement.dto.util.PageResponse;
-import com.example.librarymanagement.entity.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 
@@ -28,6 +27,4 @@ public interface UserService {
     void resendRequestEmailChange(EmailChangeRequest req, Authentication authentication);
 
     void confirmEmailChange(String token);
-
-    UserResponse mapToUserResponse(User user);
 }

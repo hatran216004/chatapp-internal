@@ -27,11 +27,14 @@ public class UserProfile {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    @Column(name = "bio", length = 1000)
+    private String bio;
+
     @Column(name = "phone", length = 30)
     private String phone;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+    @Column(name = "avatar_s3key")
+    private String avatarS3Key;
 
     @Column(name = "address")
     private String address;

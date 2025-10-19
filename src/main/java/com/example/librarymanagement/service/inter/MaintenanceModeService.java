@@ -2,7 +2,6 @@ package com.example.librarymanagement.service.inter;
 
 import com.example.librarymanagement.dto.system.request.SystemConfigRequest;
 import com.example.librarymanagement.dto.system.response.SystemConfigResponse;
-import com.example.librarymanagement.entity.SystemConfig;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
@@ -24,8 +23,5 @@ public interface MaintenanceModeService {
 
     void deleteConfig(String configKey);
 
-    // -------------------------helper -------------------------
     SystemConfigResponse updateMaintenanceMode(String status, Authentication authentication);
-
-    SystemConfigResponse mapToResponse(SystemConfig config);
 }

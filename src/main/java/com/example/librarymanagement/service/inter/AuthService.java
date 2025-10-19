@@ -2,7 +2,6 @@ package com.example.librarymanagement.service.inter;
 
 import com.example.librarymanagement.dto.auth.request.*;
 import com.example.librarymanagement.dto.auth.response.JwtResponse;
-import com.example.librarymanagement.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -26,6 +25,4 @@ public interface AuthService {
                                     HttpServletResponse res);
 
     public void verifyEmail(String token);
-
-    public void saveRefreshToken(User user, String refreshToken);
 }

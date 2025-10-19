@@ -18,6 +18,7 @@ import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.repository.VerificationTokenRepository;
 import com.example.librarymanagement.service.inter.EmailService;
 import com.example.librarymanagement.service.inter.EmailTokenService;
+import com.example.librarymanagement.service.inter.S3Service;
 import com.example.librarymanagement.service.inter.UserService;
 import com.example.librarymanagement.util.TokenHashUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,6 +31,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 
 @Service
@@ -44,6 +46,7 @@ public class UserServiceImpl implements UserService {
     private final EmailTokenService emailTokenService;
     private final TokenHashUtil tokenHashUtil;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final S3Service s3Service;
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> getAllUsers(Pageable pageable) {
@@ -83,6 +86,7 @@ public class UserServiceImpl implements UserService {
         UserProfile userProfile = UserProfile.builder()
                 .user(user)
                 .fullName(req.getFullName())
+                .bio(req.getBio())
                 .address(req.getAddress())
                 .phone(req.getPhone())
                 .dob(req.getDob())
@@ -133,6 +137,9 @@ public class UserServiceImpl implements UserService {
         }
         if (req.getGender() != null) {
             profile.setGender(req.getGender());
+        }
+        if (req.getBio() != null) {
+            profile.setBio(req.getBio());
         }
 
         userProfileRepository.save(profile);
@@ -232,15 +239,16 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    public UserResponse mapToUserResponse(User user) {
+    private UserResponse mapToUserResponse(User user) {
         UserProfile userProfile = user.getUserProfile();
 
         String gender = userProfile.getGender() != null ? userProfile.getGender().name() : null;
         String fullname = userProfile.getFullName() != null ? userProfile.getFullName() : null;
         String phone = userProfile.getPhone() != null ? userProfile.getPhone() : null;
         String address = userProfile.getAddress() != null ? userProfile.getAddress() : null;
-        String avatarUrl = userProfile.getAvatarUrl() != null ? userProfile.getAvatarUrl() : null;
         LocalDate dob = userProfile.getDob() != null ? userProfile.getDob() : null;
+
+        String avatarUrl = s3Service.generatePresignedUrl(userProfile.getAvatarS3Key(), Duration.ofHours(24));
 
         return UserResponse.builder()
                 .id(user.getId())
@@ -251,8 +259,8 @@ public class UserServiceImpl implements UserService {
                 .deletedAt(user.getDeletedAt())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                .fullName(fullname)
                 .avatarUrl(avatarUrl)
+                .fullName(fullname)
                 .dob(dob)
                 .gender(gender)
                 .phone(phone)
