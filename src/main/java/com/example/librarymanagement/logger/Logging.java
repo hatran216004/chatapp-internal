@@ -16,7 +16,6 @@ import java.time.Instant;
 @Slf4j
 public class Logging extends OncePerRequestFilter {
 
-
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,

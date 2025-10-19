@@ -11,6 +11,7 @@ import com.example.librarymanagement.repository.UserProfileRepository;
 import com.example.librarymanagement.repository.UserRepository;
 import com.example.librarymanagement.service.inter.FileService;
 import com.example.librarymanagement.service.inter.S3Service;
+import com.example.librarymanagement.validation.FileValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -30,10 +31,12 @@ public class FileServiceImpl implements FileService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final FileMetadataRepository fileMetadataRepository;
+    private final FileValidator fileValidator;
 
     @Override
     @Transactional
     public FileResponse uploadUserAvatar(MultipartFile file, Authentication authentication) {
+        fileValidator.validateImageFile(file);
         User user = validateUser(authentication);
 
         // Upload to S3

@@ -9,7 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import javax.naming.AuthenticationException;
@@ -75,13 +74,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Resource Not Found", ex.getMessage()));
     }
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
-            MaxUploadSizeExceededException ex) {
-        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(ApiResponse.error("File size exceeded the maximum allowed size", ex.getMessage()));
-    }
-
     @ExceptionHandler(S3Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleS3Exception(S3Exception ex) {
         return ResponseEntity
@@ -94,6 +86,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An error occurred while processing your request", ex.getMessage()));
+    }
+
+    @ExceptionHandler(FileValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFileValidationException(FileValidationException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("File validation failed", ex.getMessage()));
     }
 
 
