@@ -72,6 +72,13 @@ verify:
     mail: 86400000
     reset-password: 30000
     change-email: 86400000
+
+cloud:
+  aws:
+    region: ap-southeast-1
+    buckets:
+      images:
+        users:
 # dzrp onpk xegq annk
 # LibraryHT
 
