@@ -6,23 +6,25 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public interface AuthService {
-    public void signup(SignupRequest req);
+    void signup(SignupRequest req);
 
-    public void resendEmailSignup(ResendEmailSignupRequest req);
+    void resendEmailSignup(ResendEmailSignupRequest req);
 
-    public void resendEmailForgotPassword(ForgotPasswordRequest req);
+    void resendEmailForgotPassword(ForgotPasswordRequest req);
 
-    public void logout(String token, HttpServletRequest req, HttpServletResponse res);
+    void logout(String token, HttpServletRequest req, HttpServletResponse res);
 
-    public void forgotPassword(String email);
+    void forgotPassword(String email);
 
-    public void resetPassword(String token, String newPassword);
+    void resetPassword(String token, String newPassword);
 
-    public JwtResponse login(LoginRequest req, HttpServletResponse res);
+    JwtResponse login(LoginRequest req, HttpServletResponse res);
 
-    public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest,
-                                    HttpServletRequest req,
-                                    HttpServletResponse res);
+//    JwtResponse loginWithGoogle(GoogleAuthRequest req, HttpServletResponse res);
 
-    public void verifyEmail(String token);
+    JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest,
+                             HttpServletRequest req,
+                             HttpServletResponse res);
+
+    void verifyEmail(String token);
 }

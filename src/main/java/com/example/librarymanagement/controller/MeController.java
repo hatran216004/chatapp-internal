@@ -18,8 +18,7 @@ public class MeController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<UserResponse>> getMe(Authentication authentication) {
-        String email = authentication.getName();
-        UserResponse user = userService.getUserByEmail(email);
+        UserResponse user = userService.getUserByEmail(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Profile retrieved successfully", user));
     }
 

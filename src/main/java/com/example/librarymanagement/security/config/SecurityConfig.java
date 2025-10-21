@@ -4,6 +4,8 @@ import com.example.librarymanagement.exception.AccessDeniedHandler;
 import com.example.librarymanagement.exception.AuthEntryPointJwt;
 import com.example.librarymanagement.filter.MaintenanceModeFilter;
 import com.example.librarymanagement.security.filter.JwtAuthenticationFilter;
+import com.example.librarymanagement.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import com.example.librarymanagement.security.service.CustomOAuth2UserService;
 import com.example.librarymanagement.security.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +31,8 @@ public class SecurityConfig {
     private final MaintenanceModeFilter maintenanceModeFilter;
     private final AuthEntryPointJwt authEntryPointJwt;
     private final AccessDeniedHandler accessDeniedHandler;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
 
     private static final String[] WHITE_LIST_URL = {"/auth/**"};
 
@@ -54,18 +58,22 @@ public class SecurityConfig {
                         -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Không dùng session
                 // Quy định endpoint nào cần login
                 .authorizeHttpRequests(auth
-                                -> auth
-                                .requestMatchers("/auth/logout").authenticated()
-                                .requestMatchers("/auth/**").permitAll()
-//                        .requestMatchers("/users/**").authenticated()
-                                .requestMatchers("/admin/**").hasRole("SUPER_ADMIN")
-                                // bắt buộc mọi API khác(ngoài những cái được permitAll
-                                // hoặc hasRole) phải đăng nhập mới dùng được)
-                                .anyRequest().authenticated()
+                        -> auth
+                        .requestMatchers("/auth/logout").authenticated()
+                        .requestMatchers("/auth/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("SUPER_ADMIN")
+                        // bắt buộc mọi API khác(ngoài những cái được permitAll
+                        // hoặc hasRole) phải đăng nhập mới dùng được)
+                        .anyRequest().authenticated()
                 )// Gắn handler cho lỗi 401/403
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authEntryPointJwt)
                         .accessDeniedHandler(accessDeniedHandler)
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(maintenanceModeFilter, UsernamePasswordAuthenticationFilter.class);

@@ -5,11 +5,23 @@ server:
 
 app:
   base-url: http://localhost:3000
-  verify-email-url: http://localhost:3000/api/auth/verify-email
+  verify-email-url: http://localhost:3000/api/v1/auth/verify-email
 
 spring:
   application:
     name: restapi
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            redirect-uri: http://localhost:3000/api/v1/login/oauth2/code/google
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
 
   servlet:
     multipart:

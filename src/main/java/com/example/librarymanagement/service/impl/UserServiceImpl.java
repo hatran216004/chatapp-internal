@@ -9,6 +9,7 @@ import com.example.librarymanagement.entity.Role;
 import com.example.librarymanagement.entity.User;
 import com.example.librarymanagement.entity.UserProfile;
 import com.example.librarymanagement.entity.VerificationToken;
+import com.example.librarymanagement.enumeration.SocialProvider;
 import com.example.librarymanagement.exception.BadRequestException;
 import com.example.librarymanagement.exception.ResourceNotFoundException;
 import com.example.librarymanagement.exception.UnauthorizedException;
@@ -20,8 +21,6 @@ import com.example.librarymanagement.service.inter.EmailService;
 import com.example.librarymanagement.service.inter.EmailTokenService;
 import com.example.librarymanagement.service.inter.S3Service;
 import com.example.librarymanagement.service.inter.UserService;
-import com.example.librarymanagement.util.TokenHashUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.SendFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,14 +38,14 @@ import java.time.LocalDate;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final UserProfileRepository userProfileRepository;
-    private final ObjectMapper objectMapper;
+    private final VerificationTokenRepository verificationTokenRepository;
+
+    private final S3Service s3Service;
     private final EmailService emailService;
     private final EmailTokenService emailTokenService;
-    private final TokenHashUtil tokenHashUtil;
-    private final VerificationTokenRepository verificationTokenRepository;
-    private final S3Service s3Service;
+
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public PageResponse<UserResponse> getAllUsers(Pageable pageable) {
@@ -248,7 +247,12 @@ public class UserServiceImpl implements UserService {
         String address = userProfile.getAddress() != null ? userProfile.getAddress() : null;
         LocalDate dob = userProfile.getDob() != null ? userProfile.getDob() : null;
 
-        String avatarUrl = s3Service.generatePresignedUrl(userProfile.getAvatarS3Key(), Duration.ofHours(24));
+        String avatarUrl;
+        if (user.getProvider() == SocialProvider.LOCAL) {
+            avatarUrl = s3Service.generatePresignedUrl(userProfile.getAvatarS3Key(), Duration.ofHours(24));
+        } else {
+            avatarUrl = userProfile.getAvatarUrl();
+        }
 
         return UserResponse.builder()
                 .id(user.getId())

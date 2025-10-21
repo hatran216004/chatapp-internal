@@ -40,7 +40,7 @@ public class FileServiceImpl implements FileService {
         User user = validateUser(authentication);
 
         // Upload to S3
-        String folderPath = awsBuckets.getFolders().getImagesSubFolders().getUsers();
+        String folderPath = awsBuckets.getFolders().getImagesSubFolders().getUsers(); // images/users/
         String s3Key = s3Service.uploadFile(file, folderPath);
 
         // Save metadata to DB

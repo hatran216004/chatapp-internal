@@ -36,6 +36,9 @@ public class UserProfile {
     @Column(name = "avatar_s3key")
     private String avatarS3Key;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(name = "address")
     private String address;
 

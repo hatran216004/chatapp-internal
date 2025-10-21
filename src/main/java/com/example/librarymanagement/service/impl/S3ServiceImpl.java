@@ -45,7 +45,7 @@ public class S3ServiceImpl implements S3Service {
 
             return s3Key;
         } catch (IOException ex) {
-            throw new RuntimeException("");
+            throw new RuntimeException("Failed to upload file");
         }
     }
 

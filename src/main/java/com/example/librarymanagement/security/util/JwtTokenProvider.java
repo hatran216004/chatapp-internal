@@ -1,6 +1,5 @@
 package com.example.librarymanagement.security.util;
 
-import com.example.librarymanagement.security.service.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -10,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -57,13 +55,12 @@ public class JwtTokenProvider {
         return Decoders.BASE64.decode(raw);
     }
 
-    public String generateAccessToken(Authentication authentication) {
-        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+    public String generateAccessToken(Integer userId) {
 
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(userPrincipal.getId().toString())
+                .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())
@@ -71,13 +68,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(Authentication authentication) {
-        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
-
+    public String generateRefreshToken(Integer userId) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
         return Jwts.builder()
-                .setSubject(userPrincipal.getId().toString())
+                .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .setId(UUID.randomUUID().toString())

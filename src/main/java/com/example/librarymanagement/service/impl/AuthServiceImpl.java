@@ -12,14 +12,14 @@ import com.example.librarymanagement.security.util.JwtTokenProvider;
 import com.example.librarymanagement.service.inter.AuthService;
 import com.example.librarymanagement.service.inter.EmailService;
 import com.example.librarymanagement.service.inter.EmailTokenService;
+import com.example.librarymanagement.service.inter.RefreshTokenService;
 import com.example.librarymanagement.util.CookieUtil;
 import com.example.librarymanagement.util.TokenHashUtil;
 import jakarta.mail.SendFailedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -31,23 +31,27 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
-    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtBlacklistRepository jwtBlacklistRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+
     private final EmailService emailService;
     private final EmailTokenService emailTokenService;
+    private final RefreshTokenService refreshTokenService;
     private final UserDetailsServiceImpl userDetailsServiceImpl;
-    private final PasswordEncoder passwordEncoder;
-    private final VerificationTokenRepository verificationTokenRepository;
+
     private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
     private final CookieUtil cookieUtil;
     private final TokenHashUtil tokenHashUtil;
     private final AwsBuckets awsBuckets;
+    private final JwtTokenProvider jwtTokenProvider;
 
+    @Override
     @Transactional
     public void signup(SignupRequest req) {
         String email = req.getEmail();
@@ -90,6 +94,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
     @Transactional
     public void resendEmailSignup(ResendEmailSignupRequest req) {
         String email = req.getEmail();
@@ -109,6 +114,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
     @Transactional
     public void resendEmailForgotPassword(ForgotPasswordRequest req) {
         String email = req.getEmail();
@@ -128,6 +134,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
     @Transactional
     public JwtResponse login(LoginRequest req, HttpServletResponse res) {
         User user = userRepository.findByEmail(req.getEmail())
@@ -147,11 +154,11 @@ public class AuthServiceImpl implements AuthService {
                 req.getPassword());
         Authentication authentication = authenticationManager.authenticate(authToken);
 
-        String accessToken = jwtTokenProvider.generateAccessToken(authentication);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
         // Save refresh token to db
-        saveRefreshToken(user, refreshToken);
+        refreshTokenService.saveRefreshToken(user, refreshToken);
 
         cookieUtil.addRefreshTokenCookie(res, refreshToken);
 
@@ -165,6 +172,13 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+//    @Override
+//    @Transactional
+//    public JwtResponse loginWithGoogle(GoogleAuthRequest req, HttpServletResponse res) {
+//        return null;
+//    }
+
+    @Override
     @Transactional
     public void logout(String token, HttpServletRequest req, HttpServletResponse res) {
         String jti = jwtTokenProvider.extractJti(token, JwtTokenProvider.TokenKind.ACCESS);
@@ -205,6 +219,7 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.clearContext();
     }
 
+    @Override
     @Transactional
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
@@ -221,6 +236,7 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
     @Transactional
     public void resetPassword(String token, String newPassword) {
         VerificationToken verificationToken = emailTokenService.validateToken(token,
@@ -237,6 +253,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
     }
 
+    @Override
     @Transactional
     public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest,
                                     HttpServletRequest req,
@@ -290,8 +307,8 @@ public class AuthServiceImpl implements AuthService {
                 userDetails, null, userDetails.getAuthorities());
 
         // 7. Generate new tokens
-        String newAccessToken = jwtTokenProvider.generateAccessToken(authentication);
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(authentication);
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
 
         // 8. Revoke old refresh token
@@ -301,7 +318,7 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(oldRefreshToken);
 
         // 9. Save to db
-        saveRefreshToken(user, newRefreshToken);
+        refreshTokenService.saveRefreshToken(user, newRefreshToken);
 
         // 10. set cookie
         cookieUtil.addRefreshTokenCookie(res, newRefreshToken);
@@ -316,6 +333,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
+    @Override
     @Transactional
     public void verifyEmail(String token) {
         VerificationToken verificationToken = emailTokenService.validateToken(
@@ -330,23 +348,5 @@ public class AuthServiceImpl implements AuthService {
         verificationToken.setUsedAt(System.currentTimeMillis());
 
         verificationTokenRepository.save(verificationToken);
-    }
-
-    private void saveRefreshToken(User user, String refreshToken) {
-        Long refreshTTL = jwtTokenProvider.getRefreshTokenExpirationMs();
-        Long refreshIssueAt = jwtTokenProvider.extractIssueAt(refreshToken,
-                JwtTokenProvider.TokenKind.REFRESH).getTime();
-        Long expiresAt = refreshIssueAt + refreshTTL;
-
-        RefreshToken newRt = RefreshToken.builder()
-                .user(user)
-                .tokenHash(tokenHashUtil.hashToken(refreshToken))
-                .issuedAt(refreshIssueAt)
-                .revoked(false)
-                .expiresAt(expiresAt)
-                .replacedBy(null)
-                .build();
-
-        refreshTokenRepository.save(newRt);
     }
 }
