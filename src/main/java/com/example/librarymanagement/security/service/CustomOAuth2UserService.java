@@ -99,3 +99,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         return userRepository.save(user);
     }
 }
+/*
+    Local login → UserDetails làm principal
+    Google login → OAuth2User làm principal
+* */

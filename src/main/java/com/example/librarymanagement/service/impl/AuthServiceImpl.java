@@ -24,7 +24,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -172,12 +171,6 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-//    @Override
-//    @Transactional
-//    public JwtResponse loginWithGoogle(GoogleAuthRequest req, HttpServletResponse res) {
-//        return null;
-//    }
-
     @Override
     @Transactional
     public void logout(String token, HttpServletRequest req, HttpServletResponse res) {
@@ -302,14 +295,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("User not found");
         }
 
-        UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(user.getEmail());
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities());
+//        UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(user.getEmail());
+//        Authentication authentication = new UsernamePasswordAuthenticationToken(
+//                userDetails, null, userDetails.getAuthorities());
 
         // 7. Generate new tokens
         String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId());
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
-
 
         // 8. Revoke old refresh token
         oldRefreshToken.setRevoked(true);

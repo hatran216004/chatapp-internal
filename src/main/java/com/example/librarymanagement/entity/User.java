@@ -84,9 +84,6 @@ public class User implements UserDetails {
         ACTIVE, LOCKED, PENDING
     }
 }
-
-
-
  /*
     Trong UserProfile, cột user_id là foreign key trỏ về bảng users.id.
     Cột user_id nằm ở bảng user_profile (nên UserProfile là bên sở hữu mối quan hệ, gọi là owning side).
@@ -103,55 +100,3 @@ public class User implements UserDetails {
       | `role.getName()`                         | Lấy tên quyền (VD: `"ROLE_USER"`)                 |
       | Trả về list này trong `getAuthorities()` | Spring Security dùng để xác định user có quyền gì |
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
